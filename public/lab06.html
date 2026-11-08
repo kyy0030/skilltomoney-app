@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스킬투머니 실습실 · 6장 | 코드와 웹앱 연동</title>
+  <style>
+    /* Reset & Theme Variables */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #0a1128;
+      --bg-navy: #0f172a;
+      --bg-panel: rgba(15, 23, 42, 0.75);
+      --bg-card: rgba(26, 38, 74, 0.65);
+      --gold-primary: #d4af37;
+      --gold-light: #f6d87e;
+      --gold-dark: #aa8214;
+      --gold-gradient: linear-gradient(135deg, #ffe082 0%, #d4af37 50%, #aa8214 100%);
+      --text-white: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-soft: #cbd5e1;
+      --border-subtle: rgba(212, 175, 55, 0.25);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      --font-mono: "Fira Code", Consolas, "Courier New", monospace;
+      --sheets-green: #10b981;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 90% 10%, rgba(30, 58, 138, 0.35) 0%, transparent 50%),
+        linear-gradient(180deg, #0a1128 0%, #0c1735 100%);
+      background-attachment: fixed;
+      color: var(--text-white);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      word-break: keep-all;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Banner (제목 띠) */
+    .top-banner {
+      background: linear-gradient(90deg, #091024 0%, #152248 50%, #091024 100%);
+      border-bottom: 1.5px solid var(--border-subtle);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    .banner-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .banner-badge {
+      background: var(--gold-gradient);
+      color: #0a1128;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: -0.2px;
+    }
+
+    .banner-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-white);
+    }
+
+    .banner-title span {
+      color: var(--gold-light);
+    }
+
+    .banner-nav a {
+      color: var(--text-soft);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .banner-nav a:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--gold-primary);
+      color: var(--gold-light);
+    }
+
+    /* Main Split Layout */
+    .lab-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1560px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Column Panels */
+    .lab-panel {
+      background: var(--bg-panel);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .panel-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    /* ───────────────────────────────
+       LEFT PANEL: 웹앱 화면
+    ─────────────────────────────── */
+    .webapp-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+
+    /* 상단 예약 신청 상자 */
+    .reserve-card {
+      background: linear-gradient(145deg, rgba(23, 37, 75, 0.9) 0%, rgba(13, 22, 48, 0.95) 100%);
+      border: 1.5px solid rgba(212, 175, 55, 0.35);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .reserve-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .reserve-card-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .reserve-card-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: var(--gold-gradient);
+      color: #0a1128;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* 입력 폼 그리드 */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
+
+    .form-input {
+      background: #0b1329;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text-white);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .form-input:focus {
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+    }
+
+    /* 신청 버튼 */
+    .btn-submit {
+      width: 100%;
+      padding: 12px 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      border-radius: 10px;
+      background: var(--gold-gradient);
+      color: #0a1128;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(212, 175, 55, 0.5);
+      filter: brightness(1.06);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    /* 결과 자리 (print 출력 영역) */
+    .result-box {
+      margin-top: 14px;
+      background: #070b18;
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: #86efac;
+      white-space: pre-wrap;
+      word-break: break-all;
+      min-height: 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .result-box .result-label {
+      color: var(--gold-light);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    /* 하단 구글 시트 · 예약 표 */
+    .sheet-card {
+      background: linear-gradient(145deg, rgba(16, 28, 56, 0.9) 0%, rgba(10, 18, 38, 0.95) 100%);
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .sheet-card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sheet-count-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    /* 테이블 스타일링 */
+    .sheet-table-wrap {
+      overflow-x: auto;
+      flex: 1;
+    }
+
+    .sheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+
+    .sheet-table th {
+      background: rgba(16, 185, 129, 0.12);
+      color: #a7f3d0;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+      white-space: nowrap;
+    }
+
+    .sheet-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .sheet-table tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .sheet-table tr.new-row td {
+      animation: highlightRow 1.2s ease-out;
+    }
+
+    @keyframes highlightRow {
+      0% { background: rgba(16, 185, 129, 0.35); color: #ffffff; }
+      100% { background: transparent; }
+    }
+
+    .sheet-empty-row td {
+      text-align: center;
+      padding: 24px 0;
+      color: var(--text-muted);
+    }
+
+    /* ───────────────────────────────
+       RIGHT PANEL: 파이썬 코드 에디터
+    ─────────────────────────────── */
+    .editor-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-editor-card {
+      background: #090e1d;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .editor-top-bar {
+      background: #0d152b;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .editor-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .editor-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .editor-filename {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--gold-light);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .editor-lang-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Code Editor Container with Line Numbers */
+    .code-editor-body {
+      display: flex;
+      flex: 1;
+      min-height: 320px;
+      background: #070b18;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      padding: 16px 0;
+      position: relative;
+    }
+
+    .line-numbers {
+      width: 48px;
+      padding-right: 14px;
+      text-align: right;
+      color: #475569;
+      user-select: none;
+      font-weight: 600;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .code-textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      padding-left: 18px;
+      padding-right: 18px;
+      resize: none;
+      outline: none;
+      white-space: pre;
+      tab-size: 4;
+    }
+
+    /* Action Buttons Row */
+    .editor-action-wrap {
+      margin-top: 18px;
+    }
+
+    .action-btn-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-apply {
+      flex: 1.2;
+      min-width: 200px;
+      padding: 14px 22px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+      transition: all 0.25s ease;
+      letter-spacing: -0.3px;
+      font-family: inherit;
+    }
+
+    .btn-apply:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
+      filter: brightness(1.08);
+    }
+
+    .btn-apply:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-apply:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    .btn-reset {
+      flex: 0.8;
+      min-width: 130px;
+      padding: 14px 18px;
+      background: rgba(26, 39, 76, 0.85);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      color: var(--gold-light);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+      font-family: inherit;
+    }
+
+    .btn-reset:hover {
+      background: rgba(36, 54, 102, 0.95);
+      border-color: var(--gold-primary);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(0);
+    }
+
+    .btn-colab-download {
+      flex: 1.1;
+      min-width: 220px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #0a1128;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+      transition: all 0.25s ease;
+      letter-spacing: -0.3px;
+      font-family: inherit;
+    }
+
+    .btn-colab-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
+      filter: brightness(1.08);
+    }
+
+    .btn-colab-download:active {
+      transform: translateY(0);
+    }
+
+    /* Feedback Banner */
+    .feedback-banner {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.55;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      background: rgba(10, 17, 40, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .feedback-banner.success {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .feedback-banner.error {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .feedback-banner.warning {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #fbbf24;
+      display: block;
+    }
+
+    .feedback-banner.loading {
+      background: rgba(10, 17, 40, 0.8);
+      border-color: var(--border-subtle);
+      color: var(--gold-light);
+    }
+
+    .btn-colab-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0a1128;
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      margin: 2px 4px;
+      text-decoration: none;
+      vertical-align: middle;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-colab-inline:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .status-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(212, 175, 55, 0.3);
+      border-top-color: var(--gold-light);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .code-tip-box {
+      margin-top: 14px;
+      background: rgba(10, 17, 40, 0.6);
+      border: 1px dashed rgba(212, 175, 55, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .code-tip-box strong {
+      color: var(--gold-light);
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .lab-layout {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 20px;
+      }
+
+      .top-banner {
+        padding: 12px 16px;
+      }
+
+      .banner-title {
+        font-size: 1.05rem;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Top Banner (제목 띠) -->
+  <header class="top-banner">
+    <div class="banner-brand">
+      <span class="banner-badge">실습 환경</span>
+      <h1 class="banner-title">
+        스킬투머니 실습실 · <span>6장</span>
+      </h1>
+    </div>
+    <div class="banner-nav">
+      <a href="index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        메인 서비스 보기
+      </a>
+    </div>
+  </header>
+
+  <!-- 2. Main Two-Column Layout -->
+  <main class="lab-layout">
+
+    <!-- [LEFT COLUMN]: 웹앱 화면 -->
+    <section class="lab-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <span>📱</span> 웹앱 화면
+        </h2>
+        <span class="panel-badge">실시간 연동 (Live)</span>
+      </div>
+
+      <div class="webapp-screen">
+        <!-- 1) 예약 신청 상자 -->
+        <div class="reserve-card">
+          <div class="reserve-card-header">
+            <h3 class="reserve-card-title">
+              <span>⚡</span> 예약 신청 · AI 자동화 (11월 7일)
+            </h3>
+            <span class="reserve-card-badge">정원 8명</span>
+          </div>
+
+          <form onsubmit="event.preventDefault(); runPythonApp();">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="applicantName">이름</label>
+                <input type="text" id="applicantName" class="form-input" value="홍길동" placeholder="홍길동" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="applicantCount">인원</label>
+                <input type="number" id="applicantCount" class="form-input" value="2" min="1" max="8" />
+              </div>
+            </div>
+
+            <button type="button" class="btn-submit" id="submitBtn" onclick="runPythonApp()">
+              <span>신청</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </form>
+
+          <!-- 결과 자리 (print 출력) -->
+          <div class="result-box" id="printResultBox">
+            <span class="result-label">▶ 결과 자리 (출력 내용)</span>
+            <div id="printOutput">파이썬을 준비하고 있습니다...</div>
+          </div>
+        </div>
+
+        <!-- 2) 구글 시트 · 예약 표 -->
+        <div class="sheet-card">
+          <div class="sheet-card-header">
+            <h3 class="sheet-card-title">
+              <span>📊</span> 구글 시트 · 예약
+            </h3>
+            <span class="sheet-count-badge" id="sheetRowCount">0개 행 저장됨</span>
+          </div>
+
+          <div class="sheet-table-wrap">
+            <table class="sheet-table">
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>강좌</th>
+                  <th>이름</th>
+                  <th>연락처</th>
+                  <th>인원</th>
+                  <th>결제 금액</th>
+                </tr>
+              </thead>
+              <tbody id="sheetTableBody">
+                <tr class="sheet-empty-row" id="sheetEmptyRow">
+                  <td colspan="6">[신청]을 누르면 추가된 행이 여기에 쌓입니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [RIGHT COLUMN]: 이 웹앱을 움직이는 파이썬 코드 -->
+    <section class="lab-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <span>🐍</span> 이 웹앱을 움직이는 파이썬 코드
+        </h2>
+        <span class="panel-badge">Python 3</span>
+      </div>
+
+      <div class="editor-section">
+        <!-- Code Editor Card -->
+        <div class="code-editor-card">
+          <div class="editor-top-bar">
+            <div class="editor-dots">
+              <div class="editor-dot dot-red"></div>
+              <div class="editor-dot dot-yellow"></div>
+              <div class="editor-dot dot-green"></div>
+            </div>
+            <div class="editor-filename">
+              <span>main.py</span>
+            </div>
+            <span class="editor-lang-badge">UTF-8</span>
+          </div>
+
+          <div class="code-editor-body">
+            <!-- Line Numbers -->
+            <div class="line-numbers" id="lineNumbers">
+              1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13
+            </div>
+
+            <!-- Code Textarea -->
+            <textarea class="code-textarea" id="pythonCodeEditor" spellcheck="false">import json
+prices = {"AI 자동화": 35000, "숏폼 편집": 45000, "엑셀 실무": 30000}
+rsv = {"date": "2026-11-07", "course": "AI 자동화", "name": input("이름: "), "phone": "010-1111-2222", "people": int(input("인원: "))}
+rsv["total"] = prices[rsv["course"]] * rsv["people"]
+text = json.dumps(rsv, ensure_ascii=False)
+print("보내는 JSON:", text)
+
+data = json.loads(text)
+keys = ["date", "course", "name", "phone", "people", "total"]
+row = []
+for i in range(0, len(keys), 1):
+    row.append(data[keys[i]])
+print("시트에 추가되는 행:", row)</textarea>
+          </div>
+        </div>
+
+        <!-- Action Buttons & Feedback Banner -->
+        <div class="editor-action-wrap">
+          <div class="action-btn-row">
+            <button type="button" class="btn-apply" id="applyBtn" onclick="runPythonApp()" disabled>
+              <span>▶ 웹앱에 적용하기</span>
+            </button>
+            <button type="button" class="btn-reset" id="resetBtn" onclick="resetToInitialCode()">
+              <span>🔄 처음 코드로</span>
+            </button>
+            <button type="button" class="btn-colab-download" id="colabBtn" onclick="downloadColabNotebook()">
+              <span>⬇ 코랩 노트북(.ipynb)으로 받기</span>
+            </button>
+          </div>
+
+          <div class="feedback-banner loading" id="feedbackBanner">
+            <span class="status-spinner" id="pySpinner"></span>
+            <span id="feedbackText">파이썬을 준비하고 있습니다...</span>
+          </div>
+        </div>
+
+        <!-- Tip Box -->
+        <div class="code-tip-box">
+          💡 <strong>JSON 변환과 구글 시트 행 추가:</strong>
+          딕셔너리 데이터를 <code>json.dumps()</code>로 변환해 전송하고, <code>row</code> 리스트로 가공해 왼쪽의 <strong>[구글 시트 · 예약]</strong> 표에 새 행으로 차곡차곡 누적 추가합니다.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Pyodide Official CDN -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+
+  <script>
+    // ── 초기 코드 (처음 코드로 버튼에서 복원) ──────────────────────────
+    const INITIAL_CODE = `import json
+prices = {"AI 자동화": 35000, "숏폼 편집": 45000, "엑셀 실무": 30000}
+rsv = {"date": "2026-11-07", "course": "AI 자동화", "name": input("이름: "), "phone": "010-1111-2222", "people": int(input("인원: "))}
+rsv["total"] = prices[rsv["course"]] * rsv["people"]
+text = json.dumps(rsv, ensure_ascii=False)
+print("보내는 JSON:", text)
+
+data = json.loads(text)
+keys = ["date", "course", "name", "phone", "people", "total"]
+row = []
+for i in range(0, len(keys), 1):
+    row.append(data[keys[i]])
+print("시트에 추가되는 행:", row)`;
+
+    let pyodideInstance = null;
+    let isPyodideReady = false;
+    let capturedOutputs = [];
+    let inputCallCount = 0;
+    let totalAddedRows = 0;
+
+    // ── 피드백 배너 헬퍼 ─────────────────────────────────────────────────
+    function setFeedback(type, htmlContent) {
+      const banner = document.getElementById('feedbackBanner');
+      const textEl = document.getElementById('feedbackText');
+      const spinner = document.getElementById('pySpinner');
+
+      banner.className = `feedback-banner ${type}`;
+      if (spinner) {
+        spinner.style.display = type === 'loading' ? 'inline-block' : 'none';
+      }
+      textEl.innerHTML = htmlContent;
+    }
+
+    // ── input() 브릿지: 첫 번째는 이름 칸, 두 번째는 인원 칸 ─────────────
+    window.pyInputBridge = function(promptText) {
+      inputCallCount++;
+
+      if (inputCallCount === 1) {
+        // 첫 번째 input() -> 이름 칸
+        const nameInput = document.getElementById('applicantName');
+        return nameInput && nameInput.value.trim() ? nameInput.value.trim() : "홍길동";
+      } else if (inputCallCount === 2) {
+        // 두 번째 input() -> 인원 칸
+        const countInput = document.getElementById('applicantCount');
+        return countInput && countInput.value ? String(countInput.value) : "1";
+      } else {
+        return "";
+      }
+    };
+
+    // ── print() 브릿지 ──────────────────────────────────────────────────
+    window.pyPrintBridge = function(message) {
+      capturedOutputs.push(String(message));
+    };
+
+    // ── Pyodide 초기화 ──────────────────────────────────────────────────
+    async function initPyodide() {
+      const applyBtn = document.getElementById('applyBtn');
+
+      try {
+        pyodideInstance = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+        });
+
+        // input & print -> JS 브릿지 연결
+        await pyodideInstance.runPythonAsync(`
+import builtins
+import js
+
+def _custom_input(prompt=""):
+    return js.pyInputBridge(str(prompt))
+
+def _custom_print(*args, **kwargs):
+    sep = kwargs.get('sep', ' ')
+    msg = sep.join(str(a) for a in args)
+    js.pyPrintBridge(msg)
+
+builtins.input = _custom_input
+builtins.print = _custom_print
+`);
+
+        isPyodideReady = true;
+        applyBtn.disabled = false;
+        setFeedback("success", "✔ 파이썬 엔진이 준비되었습니다. [신청] 버튼을 눌러보세요.");
+
+        // 페이지 열면 코드 1회 실행하여 첫 행 추가 및 카드/결과 렌더링
+        runPythonApp(true);
+      } catch (err) {
+        console.error("Pyodide 로드 실패:", err);
+        setFeedback("error", "파이썬 준비 실패: 인터넷 연결을 확인해주세요.");
+      }
+    }
+
+    // ── 파이썬 에러 파서 (한국어 친절한 안내) ────────────────────────────
+    function parsePythonError(errStr) {
+      let lineNum = null;
+      const lineMatch = errStr.match(/line (\d+)/i);
+      if (lineMatch) lineNum = lineMatch[1];
+
+      let errorTitle = "오류";
+      let errorGuide = "코드에 오타나 문제가 없는지 확인하세요";
+
+      if (errStr.includes("SyntaxError")) {
+        errorTitle = "문법 오류";
+        errorGuide = "따옴표나 괄호가 빠지지 않았는지, 문법 기호를 확인하세요";
+      } else if (errStr.includes("NameError")) {
+        errorTitle = "이름 오류";
+        errorGuide = "변수 이름의 철자가 맞는지 확인하세요";
+      } else if (errStr.includes("KeyError")) {
+        errorTitle = "키 오류";
+        errorGuide = "딕셔너리에 없는 키를 참조했습니다 (예: prices[rsv['course']])";
+      } else if (errStr.includes("TypeError")) {
+        errorTitle = "자료형 오류";
+        errorGuide = "자료형이 맞지 않는 연산을 했습니다";
+      } else if (errStr.includes("ValueError")) {
+        errorTitle = "값 오류";
+        errorGuide = "int()에 숫자가 아닌 문자가 들어갔는지 확인하세요";
+      } else if (errStr.includes("IndentationError")) {
+        errorTitle = "들여쓰기 오류";
+        errorGuide = "줄 앞의 띄어쓰기(들여쓰기)가 맞지 않습니다";
+      }
+
+      const linePrefix = lineNum ? `${lineNum}번째 줄 ` : "";
+      return `${linePrefix}${errorTitle}: ${errorGuide}`;
+    }
+
+    // ── 구글 시트 테이블에 새 행 추가 ────────────────────────────────────
+    function appendRowToSheet(rowList) {
+      const tbody = document.getElementById('sheetTableBody');
+      const emptyRow = document.getElementById('sheetEmptyRow');
+      const countBadge = document.getElementById('sheetRowCount');
+      if (!tbody) return;
+
+      if (emptyRow) {
+        emptyRow.remove();
+      }
+
+      // rowList: [date, course, name, phone, people, total]
+      const [dateVal, courseVal, nameVal, phoneVal, peopleVal, totalVal] = rowList;
+
+      // 금액 포맷팅
+      const formattedTotal = typeof totalVal === 'number'
+        ? totalVal.toLocaleString() + '원'
+        : String(totalVal);
+
+      const tr = document.createElement('tr');
+      tr.className = 'new-row';
+      tr.innerHTML = `
+        <td>${escapeHtml(dateVal ?? '')}</td>
+        <td><strong>${escapeHtml(courseVal ?? '')}</strong></td>
+        <td>${escapeHtml(nameVal ?? '')}</td>
+        <td>${escapeHtml(phoneVal ?? '')}</td>
+        <td>${escapeHtml(peopleVal ?? '')}명</td>
+        <td><strong style="color: #f6d87e;">${escapeHtml(formattedTotal)}</strong></td>
+      `;
+
+      tbody.appendChild(tr);
+      totalAddedRows++;
+
+      if (countBadge) {
+        countBadge.textContent = `${totalAddedRows}개 행 저장됨`;
+      }
+    }
+
+    // ── 파이썬 코드 실행 메인 ─────────────────────────────────────────────
+    async function runPythonApp(isInitial = false) {
+      if (!isPyodideReady || !pyodideInstance) {
+        alert("파이썬 엔진을 준비하고 있습니다. 잠시만 기다려 주세요...");
+        return;
+      }
+
+      const editorEl = document.getElementById('pythonCodeEditor');
+      const code = editorEl ? editorEl.value : "";
+      const outputEl = document.getElementById('printOutput');
+
+      capturedOutputs = [];
+      inputCallCount = 0;
+
+      try {
+        await pyodideInstance.runPythonAsync(code);
+
+        // 1) print() 결과 자리에 보여주기
+        if (outputEl) {
+          if (capturedOutputs.length > 0) {
+            outputEl.innerHTML = capturedOutputs.map(line => escapeHtml(line)).join('<br>');
+          } else {
+            outputEl.textContent = "(출력된 내용이 없습니다)";
+          }
+        }
+
+        // 2) 코드의 row 리스트를 읽어 시트 표에 한 행 추가
+        try {
+          const rowVal = pyodideInstance.globals.get('row');
+          if (rowVal !== undefined && rowVal !== null) {
+            // Pyodide 리스트를 JS 배열로 변환
+            const jsRow = rowVal.toJs ? rowVal.toJs() : Array.from(rowVal);
+            if (Array.isArray(jsRow) && jsRow.length > 0) {
+              appendRowToSheet(jsRow);
+            }
+          }
+        } catch (e) {
+          console.warn("row 변수 조회 또는 추가 실패:", e);
+        }
+
+        if (!isInitial) {
+          setFeedback("success", "✔ 신청이 완료되어 [구글 시트 · 예약] 표에 1행이 추가되었습니다.");
+        }
+
+      } catch (err) {
+        const errStr = String(err);
+        console.error("파이썬 실행 에러:", err);
+
+        const errorMsg = parsePythonError(errStr);
+        setFeedback("error", `⚠️ ${errorMsg}`);
+      }
+    }
+
+    // ── [처음 코드로] 버튼 ───────────────────────────────────────────────
+    function resetToInitialCode() {
+      const editor = document.getElementById('pythonCodeEditor');
+      if (editor) {
+        editor.value = INITIAL_CODE;
+        updateLineNumbers();
+      }
+      setFeedback("loading", "처음 코드로 되돌렸습니다. 적용 중...");
+      runPythonApp();
+    }
+
+    // ── [⬇ 코랩 노트북으로 받기] ─────────────────────────────────────────
+    function downloadColabNotebook() {
+      const editor = document.getElementById('pythonCodeEditor');
+      const code = editor ? editor.value : INITIAL_CODE;
+
+      const notebook = {
+        nbformat: 4,
+        nbformat_minor: 0,
+        metadata: {
+          colab: { name: "ch06_lab.ipynb", provenance: [] },
+          kernelspec: { name: "python3", display_name: "Python 3" },
+          language_info: { name: "python" }
+        },
+        cells: [
+          {
+            cell_type: "markdown",
+            metadata: {},
+            source: [
+              "6장 실습실에서 고친 코드입니다. JSON 데이터 변환 및 구글 시트 행 생성을 실습합니다."
+            ]
+          },
+          {
+            cell_type: "code",
+            metadata: {},
+            execution_count: null,
+            outputs: [],
+            source: code.split('\n').map((line, i, arr) => i < arr.length - 1 ? line + '\n' : line)
+          }
+        ]
+      };
+
+      const blob = new Blob([JSON.stringify(notebook, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "ch06_lab.ipynb";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setFeedback("success", "✔ ch06_lab.ipynb를 내려받았습니다. 코랩 [파일] → [노트북 업로드]로 여세요.");
+    }
+
+    // ── HTML 특수문자 이스케이프 ──────────────────────────────────────────
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── 에디터 줄 번호 업데이트 ───────────────────────────────────────────
+    const editorEl = document.getElementById('pythonCodeEditor');
+    const lineNumbersEl = document.getElementById('lineNumbers');
+
+    function updateLineNumbers() {
+      if (!editorEl || !lineNumbersEl) return;
+      const lines = editorEl.value.split('\n').length;
+      lineNumbersEl.innerHTML = Array.from(
+        { length: Math.max(lines, 13) },
+        (_, i) => i + 1
+      ).join('<br>');
+    }
+
+    if (editorEl) {
+      editorEl.addEventListener('input', updateLineNumbers);
+      updateLineNumbers();
+    }
+
+    // ── DOM 로드 시 Pyodide 초기화 ────────────────────────────────────────
+    window.addEventListener('DOMContentLoaded', initPyodide);
+  </script>
+</body>
+</html>
+
